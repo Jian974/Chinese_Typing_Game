@@ -19,6 +19,8 @@
         
         #input-box { font-size: 28px; padding: 12px; width: 450px; text-align: center; border: 3px solid var(--gold); background: #222; color: #fff; border-radius: 50px; outline: none; }
         #hint-text { color: #888; margin-top: 10px; font-size: 14px; }
+        #loading-text { color: #aaa; font-size: 18px; margin-top: 10px; }
+        #start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -26,7 +28,8 @@
     <div id="overlay">
         <h1 style="color:var(--gold); margin-bottom:30px;">🏃‍♂️ 田徑注音射擊大賽</h1>
         <p style="color:#ccc; margin-bottom:40px;">選好字後，請按「Enter」鍵發射！</p>
-        <button id="start-btn">開始比賽</button>
+        <p id="loading-text">⏳ 正在載入詞庫…</p>
+        <button id="start-btn" disabled>開始比賽</button>
     </div>
 
     <div id="ui-layer">
@@ -40,63 +43,62 @@
 
     <div id="game-area"></div>
 
-    <script>
-        const wordBank = [
-            // --- ㄢ (前鼻音) 核心練習 ---
-            {w: "彎道", z: "ㄨㄢ ㄉㄠˋ"}, {w: "鍛鍊", z: "ㄉㄨㄢˋ ㄌㄧㄢˋ"}, {w: "跨欄", z: "ㄎㄨㄚˋ ㄌㄢˊ"},
-            {w: "挑戰", z: "ㄊㄧㄠˇ ㄓㄢˋ"}, {w: "閃電", z: "ㄕㄢˇ ㄉㄧㄢˋ"}, {w: "湛藍", z: "ㄓㄢˋ ㄌㄢˊ"},
-            {w: "欄架", z: "ㄌㄢˊ ㄐㄧㄚˋ"}, {w: "前進", z: "ㄑㄧㄢˊ ㄐㄧㄣˋ"}, {w: "緩慢", z: "ㄏㄨㄢˇ ㄇㄢˋ"},
-            {w: "奮戰", z: "ㄈㄣˋ ㄓㄢˋ"}, {w: "簡單", z: "ㄐㄧㄢ ㄉㄢ"}, {w: "乾淨", z: "ㄍㄢ ㄐㄧㄥˋ"},
-            {w: "燦爛", z: "ㄘㄢˋ ㄌㄢˋ"}, {w: "關鍵", z: "ㄍㄨㄢ ㄐㄧㄢˋ"}, {w: "勇敢", z: "ㄩㄥˇ ㄍㄢˇ"},
-            {w: "反彈", z: "ㄈㄢˇ ㄊㄢˊ"}, {w: "談話", z: "ㄊㄢˊ ㄏㄨㄚˋ"}, {w: "艱難", z: "ㄐㄧㄢ ㄋㄢˊ"},
-            {w: "宣傳", z: "ㄒㄩㄢ ㄔㄨㄢˊ"}, {w: "沿岸", z: "ㄧㄢˊ ㄢˋ"}, {w: "判斷", z: "ㄆㄢˋ ㄉㄨㄢˋ"},
-            {w: "眼神", z: "ㄧㄢˇ ㄕㄣˊ"}, {w: "燦然", z: "ㄘㄢˋ ㄖㄢˊ"}, {w: "欄杆", z: "ㄌㄢˊ ㄍㄢ"},
-            {w: "汗水", z: "ㄏㄢˋ ㄕㄨㄟˇ"}, {w: "健身", z: "ㄐㄧㄢˋ ㄕㄣ"}, {w: "簡約", z: "ㄐㄧㄢ ㄩㄝ"},
-            {w: "盤旋", z: "ㄆㄢˊ ㄒㄩㄢˊ"}, {w: "信念", z: "ㄒㄧㄣˋ ㄋㄧㄢˋ"}, {w: "平凡", z: "ㄆㄧㄥˊ ㄈㄢˊ"},
-    
-            // --- ㄤ (後鼻音) 核心練習 ---
-            {w: "衝刺", z: "ㄔㄨㄥ ㄘˋ"}, {w: "強壯", z: "ㄑㄧㄤˊ ㄓㄨㄤˋ"}, {w: "鳴槍", z: "ㄇㄧㄥˊ ㄑㄧㄤ"},
-            {w: "操場", z: "ㄘㄠ ㄔㄤˇ"}, {w: "獎牌", z: "ㄐㄧㄤˇ ㄆㄞˊ"}, {w: "強悍", z: "ㄑㄧㄤˊ ㄏㄢˋ"},
-            {w: "響亮", z: "ㄒㄧㄤˇ ㄌㄧㄤˋ"}, {w: "寬廣", z: "ㄎㄨㄢ ㄍㄨㄤˇ"}, {w: "放鬆", z: "ㄈㄤˋ ㄙㄨㄥ"},
-            {w: "狂放", z: "ㄎㄨㄤˊ ㄈㄤˋ"}, {w: "晃動", z: "ㄏㄨㄤˋ ㄉㄨㄥˋ"}, {w: "狀況", z: "ㄓㄨㄤˋ ㄎㄨㄤˋ"},
-            {w: "強項", z: "ㄑㄧㄤˊ ㄒㄧㄤˋ"}, {w: "光芒", z: "ㄍㄨㄤ ㄇㄤˊ"}, {w: "剛強", z: "ㄍㄤ ㄑㄧㄤˊ"},
-            {w: "幫忙", z: "ㄅㄤ ㄇㄤˊ"}, {w: "傍晚", z: "ㄅㄤˋ ㄨㄢˇ"}, {w: "蒼白", z: "ㄘㄤ ㄅㄞˊ"},
-            {w: "長度", z: "ㄔㄤˊ ㄉㄨˋ"}, {w: "長跑", z: "ㄔㄤˊ ㄆㄠˇ"}, {w: "廣大", z: "ㄍㄨㄤˇ ㄉㄚˋ"},
-            {w: "氧氣", z: "ㄧㄤˇ ㄑㄧˋ"}, {w: "方向", z: "ㄈㄤ ㄒㄧㄤˋ"}, {w: "獎狀", z: "ㄐㄧㄤˇ ㄓㄨㄤˋ"},
-            {w: "健康", z: "ㄐㄧㄢˋ ㄎㄤ"}, {w: "槍聲", z: "ㄑㄧㄤ ㄕㄥ"}, {w: "浪潮", z: "ㄌㄤˋ ㄔㄠˊ"},
-            {w: "昂揚", z: "ㄤˊ ㄧㄤˊ"}, {w: "鋼鐵", z: "ㄍㄤ ㄊㄧㄝˇ"}, {w: "港灣", z: "ㄍㄤˇ ㄨㄢ"},
+    <script type="module">
+        import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAnalytics }           from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+        import { getFirestore, collection, getDocs }
+                                          from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-            // --- 運動專區 ---
-            {w: "跑步", z: "ㄆㄠˇ ㄅㄨˋ"}, {w: "田徑", z: "ㄊㄧㄢˊ ㄐㄧㄥˋ"}, {w: "跌倒", z: "ㄉㄧㄝˊ ㄉㄠˇ"}, 
-            {w: "馬拉松", z: "ㄇㄚˇ ㄌㄚ ㄙㄨㄥ"}, {w: "接力賽", z: "ㄐㄧㄝ ㄌㄧˋ ㄙㄞˋ"}, {w: "深呼吸", z: "ㄕㄣ ㄏㄨ ㄒㄧ"}, 
-            {w: "運動員", z: "ㄩㄣˋ ㄉㄨㄥˋ ㄩㄢˊ"}, {w: "終點線", z: "ㄓㄨㄥ ㄉㄧㄢˇ ㄒㄧㄢˋ"}, {w: "拉筋", z: "ㄌㄚ ㄐㄧㄣ"}, 
-            {w: "加速", z: "ㄐㄧㄚ ㄙㄨˋ"}, {w: "起跑線", z: "ㄑㄧˇ ㄆㄠˇ ㄒㄧㄢˋ"}, {w: "爆發力", z: "ㄅㄠˋ ㄈㄚ ㄌㄧˋ"}, 
-            {w: "教練", z: "ㄐㄧㄠˋ ㄌㄧㄢˋ"}, {w: "籃球", z: "ㄌㄢˊ ㄑㄧㄡˊ"}, {w: "網球", z: "ㄨㄤˇ ㄑㄧㄡˊ"},
-            {w: "護膝", z: "ㄏㄨˋ ㄒㄧ"}, {w: "計時器", z: "ㄐㄧˋ ㄕˊ ㄑㄧˋ"}, {w: "耐力", z: "ㄋㄞˋ ㄌㄧˋ"},
-            {w: "速度", z: "ㄙㄨˋ ㄉㄨˋ"}, {w: "熱身", z: "ㄖㄜˋ ㄕㄣ"}, {w: "跳高", z: "ㄊㄧㄠˋ ㄍㄠ"},
-            {w: "跳遠", z: "ㄊㄧㄠˋ ㄩㄢˇ"}, {w: "鉛球", z: "ㄑㄧㄢ ㄑㄧㄡˊ"}, {w: "三級跳", z: "ㄙㄢ ㄐㄧˊ ㄊㄧㄠˋ"},
-        
-            // --- 辨析練習 ---
-            {w: "慷慨", z: "ㄎㄤ ㄎㄞˇ"}, {w: "盤算", z: "ㄆㄢˊ ㄙㄨㄢˋ"},
-            {w: "安詳", z: "ㄢ ㄒㄧㄤˊ"}, {w: "昂貴", z: "ㄤˊ ㄍㄨㄟˋ"}, {w: "擔當", z: "ㄉㄢ ㄉㄤ"},
-            {w: "渲染", z: "ㄒㄩㄢˋ ㄖㄢˇ"}, {w: "廣播", z: "ㄍㄨㄤˇ ㄅㄛ"}, {w: "繁忙", z: "ㄈㄢˊ ㄇㄤˊ"},
-            {w: "欣賞", z: "ㄒㄧㄣ ㄕㄤˇ"}, {w: "贊同", z: "ㄗㄢˋ ㄊㄨㄥˊ"}, {w: "榜樣", z: "ㄅㄤˇ ㄧㄤˋ"},
-            {w: "徜徉", z: "ㄔㄤˊ ㄧㄤˊ"}, {w: "頑強", z: "ㄨㄢˊ ㄑㄧㄤˊ"}, {w: "斑斕", z: "ㄅㄢ ㄌㄢˊ"},
-            {w: "綻放", z: "ㄓㄢˋ ㄈㄤˋ"}, {w: "浪漫", z: "ㄌㄤˋ ㄇㄢˋ"},
-            {w: "清爽", z: "ㄑㄧㄥ ㄕㄨㄤˇ"}, {w: "觀看", z: "ㄍㄨㄢ ㄎㄢˋ"}, {w: "場勘", z: "ㄔㄤˇ ㄎㄢ"}
-        ];
+        // ── Firebase 設定 ──────────────────────────────────────────────────
+        const firebaseConfig = {
+            apiKey:            "AIzaSyCE9WOwK5sNsyz-PDfSXFE8BcpWxeyIGts",
+            authDomain:        "chinese-typing-game.firebaseapp.com",
+            projectId:         "chinese-typing-game",
+            storageBucket:     "chinese-typing-game.firebasestorage.app",
+            messagingSenderId: "827794855167",
+            appId:             "1:827794855167:web:c2cf312a2c67df3844e8ca",
+            measurementId:     "G-GLHCNEQ0X1"
+        };
 
-        const gameArea = document.getElementById('game-area');
-        const inputBox = document.getElementById('input-box');
-        const startBtn = document.getElementById('start-btn');
-        const overlay = document.getElementById('overlay');
-        
-        let score = 0;
-        let lives = 5;
+        const app       = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db        = getFirestore(app);
+
+        // ── DOM refs ───────────────────────────────────────────────────────
+        const gameArea  = document.getElementById('game-area');
+        const inputBox  = document.getElementById('input-box');
+        const startBtn  = document.getElementById('start-btn');
+        const overlay   = document.getElementById('overlay');
+        const loadingTxt= document.getElementById('loading-text');
+
+        // ── Game state ─────────────────────────────────────────────────────
+        let wordBank  = [];
+        let score     = 0;
+        let lives     = 5;
         let isPlaying = false;
-        let speed = 0.3; 
-        let lastWords = []; // 用於防止連續重複
+        let speed     = 0.3;
+        let lastWords = [];
 
+        // ── Load word bank from Firestore ──────────────────────────────────
+        async function loadWords() {
+            try {
+                const snapshot = await getDocs(collection(db, "words"));
+                wordBank = snapshot.docs.map(doc => doc.data());
+
+                if (wordBank.length === 0) {
+                    loadingTxt.textContent = "⚠️ 詞庫是空的，請先執行上傳程式 upload_words.html";
+                    return;
+                }
+                loadingTxt.style.display = 'none';
+                startBtn.disabled = false;
+            } catch (err) {
+                loadingTxt.textContent = "❌ 載入失敗：" + err.message;
+                console.error(err);
+            }
+        }
+        loadWords();
+
+        // ── Game logic ─────────────────────────────────────────────────────
         startBtn.addEventListener('click', () => {
             overlay.style.display = 'none';
             inputBox.disabled = false;
@@ -106,25 +108,24 @@
         });
 
         function startGameLoop() {
-            // 每 3.5 秒產生一個新目標
-            setInterval(() => { if (isPlaying) spawnTarget(); }, 3500); 
+            setInterval(() => { if (isPlaying) spawnTarget(); }, 3500);
         }
 
         function spawnTarget() {
             if (lives <= 0) return;
 
-            // 隨機選取詞彙，並避開最近出現過的 8 個詞
-            let availableWords = wordBank.filter(w => !lastWords.includes(w.w));
-            const data = availableWords[Math.floor(Math.random() * availableWords.length)];
-            
+            let available = wordBank.filter(w => !lastWords.includes(w.w));
+            if (available.length === 0) available = wordBank;
+            const data = available[Math.floor(Math.random() * available.length)];
+
             lastWords.push(data.w);
             if (lastWords.length > 8) lastWords.shift();
 
             const target = document.createElement('div');
             target.className = 'target';
             target.style.left = Math.random() * (gameArea.clientWidth - 160) + 'px';
-            target.style.top = '-90px';
-            target.innerHTML = `<div class="word">${data.w}</div><div class="zhuyin">${data.z}</div>`;
+            target.style.top  = '-90px';
+            target.innerHTML  = `<div class="word">${data.w}</div><div class="zhuyin">${data.z}</div>`;
             target.dataset.word = data.w;
             gameArea.appendChild(target);
 
@@ -135,9 +136,9 @@
                 target.style.top = currentTop + 'px';
                 if (currentTop > gameArea.clientHeight) {
                     clearInterval(fallInterval);
-                    if (target.parentNode) { 
-                        target.remove(); 
-                        updateLives(-1); 
+                    if (target.parentNode) {
+                        target.remove();
+                        updateLives(-1);
                     }
                 }
             }, 16);
@@ -149,8 +150,7 @@
                 const typed = inputBox.value.trim();
                 if (typed.length === 0) return;
 
-                const targets = document.querySelectorAll('.target');
-                targets.forEach(t => {
+                document.querySelectorAll('.target').forEach(t => {
                     if (t.dataset.word === typed) {
                         clearInterval(t.dataset.intervalId);
                         t.remove();
@@ -158,7 +158,7 @@
                         document.getElementById('score').innerText = score;
                     }
                 });
-                inputBox.value = ''; 
+                inputBox.value = '';
             }
         });
 
